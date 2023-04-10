@@ -10,6 +10,7 @@ import { ReactComponent as IssueOpened } from "../../assets/issueOpened.svg";
 import { ReactComponent as PullRequests } from "../../assets/pullRequests.svg";
 
 import styles from "./Dashboard.module.scss";
+import { InMemoryGithubRepositoryRepository } from "../../infraestructure/InMemoryGithubRepositoryRepository";
 
 const formatter = new Intl.RelativeTimeFormat(undefined, {
   numeric: 'auto'
@@ -38,6 +39,10 @@ function isoToRedableDate(date: string) {
   }
 }
 
+const repository = new InMemoryGithubRepositoryRepository();
+const repositories = repository.search();
+
+
 export function Dashboard() {
   const title = "DevDash";
 
@@ -47,7 +52,7 @@ export function Dashboard() {
         <h1>{title}</h1>
       </header>
       <section className={styles.container}>
-				{githubApiResponses.map((widget) => (
+				{repositories.map((widget) => (
 					<article className={styles.widget} key={widget.repositoryData.id}>
 						<header className={styles.widget__header}>
 							<a
