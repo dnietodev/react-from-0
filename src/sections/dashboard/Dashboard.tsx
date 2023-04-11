@@ -10,41 +10,55 @@ import { ReactComponent as IssueOpened } from "../../assets/issueOpened.svg";
 import { ReactComponent as PullRequests } from "../../assets/pullRequests.svg";
 
 import styles from "./Dashboard.module.scss";
-import { InMemoryGithubRepositoryRepository } from "../../infraestructure/InMemoryGithubRepositoryRepository";
+import { useEffect, useState } from "react";
+import { config } from "../../devdash_config";
+import { GitHubApiGitHubRepositoryRepository } from "../../infraestructure/GitHubApiGitHubRepositoryRepository";
+import { GitHubApiResponses } from "../../infraestructure/GitHubApiResponses";
 
 const formatter = new Intl.RelativeTimeFormat(undefined, {
-  numeric: 'auto'
-})
+  numeric: "auto",
+});
 
 const DIVISIONS = [
-  { amount: 60, name: 'seconds' },
-  { amount: 60, name: 'minutes' },
-  { amount: 24, name: 'hours' },
-  { amount: 7, name: 'days' },
-  { amount: 4.34524, name: 'weeks' },
-  { amount: 12, name: 'months' },
-  { amount: Number.POSITIVE_INFINITY, name: 'years' }
-]
+  { amount: 60, name: "seconds" },
+  { amount: 60, name: "minutes" },
+  { amount: 24, name: "hours" },
+  { amount: 7, name: "days" },
+  { amount: 4.34524, name: "weeks" },
+  { amount: 12, name: "months" },
+  { amount: Number.POSITIVE_INFINITY, name: "years" },
+];
 
 function isoToRedableDate(date: string) {
-  const lastUpdate = new Date(date)
+  const lastUpdate = new Date(date);
   let duration = (lastUpdate.getTime() - new Date().getTime()) / 1000;
 
   for (let i = 0; i < DIVISIONS.length; i++) {
-    const division = DIVISIONS[i]
+    const division = DIVISIONS[i];
     if (Math.abs(duration) < division.amount) {
-      return formatter.format(Math.round(duration), division.name as Intl.RelativeTimeFormatUnit)
+      return formatter.format(
+        Math.round(duration),
+        division.name as Intl.RelativeTimeFormatUnit
+      );
     }
-    duration /= division.amount
+    duration /= division.amount;
   }
 }
 
-const repository = new InMemoryGithubRepositoryRepository();
-const repositories = repository.search();
-
+const repository = new GitHubApiGitHubRepositoryRepository(
+  config.github_access_token
+);
 
 export function Dashboard() {
   const title = "DevDash";
+
+  const [gitHubApiResponses, setGitHubApiResponses] = useState<GitHubApiResponses[]>([]);
+
+  useEffect(() => {
+    const githubApiResponses = repository.search(
+      config.widgets.map((widget) => widget.repository_url)
+    ).then((responses) => setGitHubApiResponses(responses));
+  }, []);
 
   return (
     <>
@@ -52,60 +66,66 @@ export function Dashboard() {
         <h1>{title}</h1>
       </header>
       <section className={styles.container}>
-				{repositories.map((widget) => (
-					<article className={styles.widget} key={widget.repositoryData.id}>
-						<header className={styles.widget__header}>
-							<a
-								className={styles.widget__title}
-								href={widget.repositoryData.html_url}
-								target="_blank"
-								title={`${widget.repositoryData.organization.login}/${widget.repositoryData.name}`}
-								rel="noreferrer"
-							>
-								{widget.repositoryData.organization.login}/{widget.repositoryData.name}
-							</a>
-							{widget.repositoryData.private ? <Lock /> : <Unlock />}
-						</header>
-						<div className={styles.widget__body}>
-							<div className={styles.widget__status}>
-								<p>Last update {isoToRedableDate(widget.repositoryData.updated_at)}</p>
-								{widget.CiStatus.workflow_runs.length > 0 && (
-									<div>
-										{widget.CiStatus.workflow_runs[0].status === "completed" ? (
-											<Check />
-										) : (
-											<Error />
-										)}
-									</div>
-								)}
-							</div>
-							<p className={styles.widget__description}>{widget.repositoryData.description}</p>
-						</div>
-						<footer className={styles.widget__footer}>
-							<div className={styles.widget__stat}>
-								<Start />
-								<span>{widget.repositoryData.stargazers_count}</span>
-							</div>
-							<div className={styles.widget__stat}>
-								<Watchers />
-								<span>{widget.repositoryData.watchers_count}</span>
-							</div>
-							<div className={styles.widget__stat}>
-								<Forks />
-								<span>{widget.repositoryData.forks_count}</span>
-							</div>
-							<div className={styles.widget__stat}>
-								<IssueOpened />
-								<span>{widget.repositoryData.open_issues_count}</span>
-							</div>
-							<div className={styles.widget__stat}>
-								<PullRequests />
-								<span>{widget.pullRequest.length}</span>
-							</div>
-						</footer>
-					</article>
-				))}
-			</section>
+        {gitHubApiResponses.map((widget) => (
+          <article className={styles.widget} key={widget.repositoryData.id}>
+            <header className={styles.widget__header}>
+              <a
+                className={styles.widget__title}
+                href={widget.repositoryData.html_url}
+                target="_blank"
+                title={`${widget.repositoryData.organization.login}/${widget.repositoryData.name}`}
+                rel="noreferrer"
+              >
+                {widget.repositoryData.organization.login}/
+                {widget.repositoryData.name}
+              </a>
+              {widget.repositoryData.private ? <Lock /> : <Unlock />}
+            </header>
+            <div className={styles.widget__body}>
+              <div className={styles.widget__status}>
+                <p>
+                  Last update{" "}
+                  {isoToRedableDate(widget.repositoryData.updated_at)}
+                </p>
+                {widget.ciStatus.workflow_runs.length > 0 && (
+                  <div>
+                    {widget.ciStatus.workflow_runs[0].status === "completed" ? (
+                      <Check />
+                    ) : (
+                      <Error />
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className={styles.widget__description}>
+                {widget.repositoryData.description}
+              </p>
+            </div>
+            <footer className={styles.widget__footer}>
+              <div className={styles.widget__stat}>
+                <Start />
+                <span>{widget.repositoryData.stargazers_count}</span>
+              </div>
+              <div className={styles.widget__stat}>
+                <Watchers />
+                <span>{widget.repositoryData.watchers_count}</span>
+              </div>
+              <div className={styles.widget__stat}>
+                <Forks />
+                <span>{widget.repositoryData.forks_count}</span>
+              </div>
+              <div className={styles.widget__stat}>
+                <IssueOpened />
+                <span>{widget.repositoryData.open_issues_count}</span>
+              </div>
+              <div className={styles.widget__stat}>
+                <PullRequests />
+                <span>{widget.pullRequests.length}</span>
+              </div>
+            </footer>
+          </article>
+        ))}
+      </section>
     </>
   );
 }
