@@ -1,4 +1,3 @@
-import { githubApiResponses } from "../../github_api_responses";
 import { ReactComponent as Lock } from "../../assets/lock.svg";
 import { ReactComponent as Unlock } from "../../assets/unlock.svg";
 import { ReactComponent as Check } from "../../assets/check.svg";
@@ -14,6 +13,7 @@ import { useEffect, useState } from "react";
 import { config } from "../../devdash_config";
 import { GitHubApiGitHubRepositoryRepository } from "../../infraestructure/GitHubApiGitHubRepositoryRepository";
 import { GitHubApiResponses } from "../../infraestructure/GitHubApiResponses";
+import { GitHubRepository } from "../../domain/GitHubRepository";
 
 const formatter = new Intl.RelativeTimeFormat(undefined, {
   numeric: "auto",
@@ -29,9 +29,8 @@ const DIVISIONS = [
   { amount: Number.POSITIVE_INFINITY, name: "years" },
 ];
 
-function isoToRedableDate(date: string) {
-  const lastUpdate = new Date(date);
-  let duration = (lastUpdate.getTime() - new Date().getTime()) / 1000;
+function isoToReadableDate(date: Date) {
+  let duration = (date.getTime() - new Date().getTime()) / 1000;
 
   for (let i = 0; i < DIVISIONS.length; i++) {
     const division = DIVISIONS[i];
@@ -45,87 +44,83 @@ function isoToRedableDate(date: string) {
   }
 }
 
-const repository = new GitHubApiGitHubRepositoryRepository(
-  config.github_access_token
-);
+
 
 export function Dashboard() {
-  const title = "DevDash";
+  const repository = new GitHubApiGitHubRepositoryRepository(config.github_access_token);
+	const [repositoryData, setRepositoryData] = useState<GitHubRepository[]>([]);
 
-  const [gitHubApiResponses, setGitHubApiResponses] = useState<GitHubApiResponses[]>([]);
+	useEffect(() => {
+		repository
+			.search(config.widgets.map((widget) => widget.repository_url))
+			.then((repositoryData) => {
+				setRepositoryData(repositoryData);
+			});
+	}, []);
 
-  useEffect(() => {
-    const githubApiResponses = repository.search(
-      config.widgets.map((widget) => widget.repository_url)
-    ).then((responses) => setGitHubApiResponses(responses));
-  }, []);
-
-  return (
-    <>
-      <header className={styles.container}>
-        <h1>{title}</h1>
-      </header>
-      <section className={styles.container}>
-        {gitHubApiResponses.map((widget) => (
-          <article className={styles.widget} key={widget.repositoryData.id}>
-            <header className={styles.widget__header}>
-              <a
-                className={styles.widget__title}
-                href={widget.repositoryData.html_url}
-                target="_blank"
-                title={`${widget.repositoryData.organization.login}/${widget.repositoryData.name}`}
-                rel="noreferrer"
-              >
-                {widget.repositoryData.organization.login}/
-                {widget.repositoryData.name}
-              </a>
-              {widget.repositoryData.private ? <Lock /> : <Unlock />}
-            </header>
-            <div className={styles.widget__body}>
-              <div className={styles.widget__status}>
-                <p>
-                  Last update{" "}
-                  {isoToRedableDate(widget.repositoryData.updated_at)}
-                </p>
-                {widget.ciStatus.workflow_runs.length > 0 && (
-                  <div>
-                    {widget.ciStatus.workflow_runs[0].status === "completed" ? (
-                      <Check />
-                    ) : (
-                      <Error />
-                    )}
-                  </div>
-                )}
-              </div>
-              <p className={styles.widget__description}>
-                {widget.repositoryData.description}
-              </p>
-            </div>
-            <footer className={styles.widget__footer}>
-              <div className={styles.widget__stat}>
-                <Start />
-                <span>{widget.repositoryData.stargazers_count}</span>
-              </div>
-              <div className={styles.widget__stat}>
-                <Watchers />
-                <span>{widget.repositoryData.watchers_count}</span>
-              </div>
-              <div className={styles.widget__stat}>
-                <Forks />
-                <span>{widget.repositoryData.forks_count}</span>
-              </div>
-              <div className={styles.widget__stat}>
-                <IssueOpened />
-                <span>{widget.repositoryData.open_issues_count}</span>
-              </div>
-              <div className={styles.widget__stat}>
-                <PullRequests />
-                <span>{widget.pullRequests.length}</span>
-              </div>
-            </footer>
-          </article>
-        ))}
-      </section>
-    </>
-  );
+	return (
+		<>
+			<header className={styles.header}>
+				<section className={styles.header__container}>
+					<h1 className={styles.app__brand}>DevDash_</h1>
+				</section>
+			</header>
+			{repositoryData.length === 0 ? (
+				<div className={styles.empty}>
+					<span>No hay widgets configurados.</span>
+				</div>
+			) : (
+				<section className={styles.container}>
+					{repositoryData.map((widget) => (
+						<article className={styles.widget} key={`${widget.id.organization}/${widget.id.name}`}>
+							<header className={styles.widget__header}>
+								<h2 className={styles.widget__title}>
+									<a
+										href={widget.url}
+										target="_blank"
+										title={`${widget.id.organization}/${widget.id.name}`}
+										rel="noreferrer"
+									>
+										{widget.id.organization}/{widget.id.name}
+									</a>
+								</h2>
+								{widget.private ? <Lock /> : <Unlock />}
+							</header>
+							<div className={styles.widget__body}>
+								<div className={styles.widget__status}>
+									<p>Last update {isoToReadableDate(widget.updatedAt)}</p>
+									{widget.hasWorkflows && (
+										<div>{widget.isLastWorkflowSuccess ? <Check /> : <Error />}</div>
+									)}
+								</div>
+								<p className={styles.widget__description}>{widget.description}</p>
+							</div>
+							<footer className={styles.widget__footer}>
+								<div className={styles.widget__stat}>
+									<Start />
+									<span>{widget.stars}</span>
+								</div>
+								<div className={styles.widget__stat}>
+									<Watchers />
+									<span>{widget.watchers}</span>
+								</div>
+								<div className={styles.widget__stat}>
+									<Forks />
+									<span>{widget.forks}</span>
+								</div>
+								<div className={styles.widget__stat}>
+									<IssueOpened />
+									<span>{widget.issues}</span>
+								</div>
+								<div className={styles.widget__stat}>
+									<PullRequests />
+									<span>{widget.pullRequests}</span>
+								</div>
+							</footer>
+						</article>
+					))}
+				</section>
+			)}
+		</>
+	);
 }

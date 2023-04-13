@@ -11,7 +11,7 @@ export const config: DevDashConfig = {
     widgets: [
         {
             id: '617950f4-85b0-450e-805b-1ce4a3721e4b',
-            repository_url:  'https://github.com/ionic-team/ionic-framework',
+            repository_url:  'https://github.com/CodelyTV/dotly',
         },
         {
             id: '8942fe6e-6189-4c44-b6a8-d48a00d8764b',
