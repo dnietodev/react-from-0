@@ -1,13 +1,14 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import { Dashboard } from './sections/dashboard/Dashboard'
+import { GitHubApiGitHubRepositoryRepository } from './infraestructure/GitHubApiGitHubRepositoryRepository'
+import { config } from './devdash_config'
+
+const repository = new GitHubApiGitHubRepositoryRepository(config.github_access_token);
 
 function App() {
 
   return (
-    <Dashboard/>
+    <Dashboard repository={repository}/>
   )
 }
 

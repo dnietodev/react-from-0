@@ -12,7 +12,7 @@ describe("Dashboard section", () => {
     it("show all widgets", async () => {
         const gitHubRepository = GitHubRepositoryMother.create();
         mockRepository.search.mockResolvedValue([gitHubRepository]);
-        render(<Dashboard/>)
+        render(<Dashboard repository={mockRepository}/>)
         const title = await screen.findByRole("heading", {
 			name: new RegExp("DevDash_", "i"),
 		});
@@ -21,7 +21,7 @@ describe("Dashboard section", () => {
 		const firstWidgetHeader = await screen.findByRole("heading", {
 			name: new RegExp(firstWidgetTitle, "i"),
 		});
-
+        expect(title).toBeInTheDocument();
         expect(firstWidgetHeader).toBeInTheDocument();
     })
 })

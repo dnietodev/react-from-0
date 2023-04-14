@@ -14,6 +14,7 @@ import { config } from "../../devdash_config";
 import { GitHubApiGitHubRepositoryRepository } from "../../infraestructure/GitHubApiGitHubRepositoryRepository";
 import { GitHubApiResponses } from "../../infraestructure/GitHubApiResponses";
 import { GitHubRepository } from "../../domain/GitHubRepository";
+import { GitHubRepositoryRepository } from "../../domain/GitHubRepositoryRepository";
 
 const formatter = new Intl.RelativeTimeFormat(undefined, {
   numeric: "auto",
@@ -46,8 +47,8 @@ function isoToReadableDate(date: Date) {
 
 
 
-export function Dashboard() {
-  const repository = new GitHubApiGitHubRepositoryRepository(config.github_access_token);
+export function Dashboard({repository}: {repository: GitHubRepositoryRepository}) {
+  
 	const [repositoryData, setRepositoryData] = useState<GitHubRepository[]>([]);
 
 	useEffect(() => {
