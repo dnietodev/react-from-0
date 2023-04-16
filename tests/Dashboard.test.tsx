@@ -24,4 +24,25 @@ describe("Dashboard section", () => {
         expect(title).toBeInTheDocument();
         expect(firstWidgetHeader).toBeInTheDocument();
     })
+    it("show not results message when there are no widgets", async () => {
+		mockRepository.search.mockResolvedValue([]);
+
+		render(<Dashboard repository={mockRepository} />);
+
+		const noResults = await screen.findByText(new RegExp("No hay widgets configurados", "i"));
+
+		expect(noResults).toBeInTheDocument();
+	});
+
+	it("show last modified date in human readable format", async () => {
+		const gitHubRepository = GitHubRepositoryMother.create({ updatedAt: new Date() });
+
+		mockRepository.search.mockResolvedValue([gitHubRepository]);
+
+		render(<Dashboard repository={mockRepository} />);
+
+		const modificationDate = await screen.findByText(new RegExp("now", "i"));
+
+		expect(modificationDate).toBeInTheDocument();
+	});
 })
