@@ -16,11 +16,6 @@ export function Dashboard({repository}: {repository: GitHubRepositoryRepository}
 
 	return (
 		<>
-			<header className={styles.header}>
-				<section className={styles.header__container}>
-					<h1 className={styles.app__brand}>DevDash_</h1>
-				</section>
-			</header>
 			{repositoryData.length === 0 ? (
 				<div className={styles.empty}>
 					<span>No hay widgets configurados.</span>
